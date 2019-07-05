@@ -1,45 +1,11 @@
-<!--<template>
-  <div class="home">
-    <img alt="Vue logo" src="../assets/logo.png">
-    <HelloWorld msg="Welcome to Your Vue.js App"/>
-  </div>
-</template>
-
-<script>
-// @ is an alias to /src
-import HelloWorld from '@/components/HelloWorld.vue'
-
-export default {
-  name: 'home',
-  components: {
-    HelloWorld
-  }
-}
-</script>
--->
-
-<!--
-<template>
-  <el-upload
-    class="upload-demo"
-    drag
-    action="https://jsonplaceholder.typicode.com/posts/"
-    multiple>
-    <i class="el-icon-upload"></i>
-    <div class="el-upload__text">将文件拖到此处，或<em>点击上传</em></div>
-    <div class="el-upload__tip" slot="tip">只能上传jpg/png文件，且不超过500kb</div>
-  </el-upload>
-    
-</template>
-
-<script>
-
-</script>
--->
-
 <template>
   <div>
-    <div class="imp_processor">
+    <el-steps :active="active" simple style="margin-left:20%;margin-right:20%;margin-bottom:20px">
+      <el-step title="步骤 1" icon="el-icon-edit" @click.native="active=1"></el-step>
+      <el-step title="步骤 2" icon="el-icon-upload" @click.native="active=2"></el-step>
+      <el-step title="步骤 3" icon="el-icon-picture" @click.native="active=3"></el-step>
+    </el-steps>
+    <div class="imp_processor" v-if="active==1">
       <div>
         <el-upload
           class="upload-demo"
@@ -51,21 +17,47 @@ export default {
         >
           <i class="el-icon-upload"></i>
           <div class="el-upload__text">拖拽 或 点击上传</div>
-          <div class="el-upload__tip">支持绝大多数图片格式，单张图片最大支持5MB</div>
+          <!--<div class="el-upload__tip">支持绝大多数图片格式，单张图片最大支持5MB</div>-->
         </el-upload>
 
+        <el-button type="text" @click="dialogVisible=true">重新裁剪</el-button>
+
         <div>
-          <img :src="imgbase64" style="padding: 10px">
-          <br>
-          <el-input type="textarea" v-model="ocrResult" placeholder="OCR识别结果在此" style="width: 30%"></el-input>
-          <br>
+          <img :src="imgbase64" style="padding: 10px" />
+          <br />
+          <el-input
+            type="textarea"
+            autosize
+            v-model="ocrText"
+            placeholder="OCR识别结果在此"
+            style="width: 60%"
+            :disabled="true"
+          ></el-input>
+          <br />
           <div style="padding: 25px">
-            <el-button style="margin-right: 25px" type="primary" plain :loading="buttonDisable" @click="ocr">OCR识别</el-button>
-            <el-button style="margin-left: 25px" type="success" plain :loading="buttonDisable" >下一步</el-button>
+            <el-button
+              style="margin-right: 25px"
+              type="primary"
+              plain
+              :loading="buttonDisable"
+              @click="ocr"
+            >OCR识别</el-button>
+            <el-button
+              style="margin-left: 25px"
+              type="success"
+              plain
+              :loading="buttonDisable"
+              @click="nextstep"
+            >下一步</el-button>
           </div>
         </div>
 
-        <el-dialog title="图片剪裁" :visible.sync="dialogVisible" append-to-body>
+        <el-dialog
+          title="图片剪裁"
+          :visible.sync="dialogVisible"
+          append-to-body
+          :close-on-click-modal="false"
+        >
           <div class="cropper-content">
             <div class="cropper" style="text-align:center; height: 300px">
               <vueCropper
@@ -89,7 +81,7 @@ export default {
             <div :style="{'margin-left':'20px'}">
               <div class="show-preview" :style="previewStyle">
                 <div :style="previews.div" class="preview">
-                  <img :src="previews.url" :style="previews.img">
+                  <img :src="previews.url" :style="previews.img" />
                 </div>
               </div>
             </div>
@@ -100,6 +92,71 @@ export default {
           </div>
         </el-dialog>
       </div>
+    </div>
+    <div class="selector" v-if="active==2">
+      <el-container>
+        <el-header height="0px"></el-header>
+        <el-main style="height: 300px; position: relative">
+          <div style="position:absolute; text-align:center; margin:0 auto">
+            <img :src="imgbase64" style />
+            <el-tag
+              size="mini"
+              v-for="(tag, index) in ocrResult"
+              :key="index"
+              :style='{opacity:transparent / 100, position:"absolute", left:tag.frame[0].split(",")[0] + "px", top:tag.frame[0].split(",")[1] + "px"}'
+            >{{tag.content}}</el-tag>
+          </div>
+        </el-main>
+        <el-main style="height: 300px">
+          <el-table :data="candidateSegment" border style="width: 100%" v-loading="loading">
+            <el-table-column label="正文" width>
+              <template slot-scope="scope">
+                <el-input v-model="scope.row.content" placeholder="请输入内容"></el-input>
+              </template>
+            </el-table-column>
+            <el-table-column label="操作" width="120">
+              <template slot-scope="scope">
+                <el-button
+                  @click.native.prevent="deleteRow(scope.$index, candidateSegment)"
+                  type="text"
+                  size="small"
+                >移除</el-button>
+              </template>
+            </el-table-column>
+          </el-table>
+        </el-main>
+        <el-footer>
+          <el-button
+            style="margin-left: 25px"
+            type="success"
+            plain
+            :loading="buttonDisable"
+            @click="laststep"
+          >上一步</el-button>
+          <el-button
+            style="margin-left: 25px"
+            type="success"
+            plain
+            :loading="buttonDisable"
+            @click="nextstep"
+          >下一步</el-button>
+          <el-row>
+            <el-col :span="12" :offset="6">
+              <div style='margin-top: 10px; font-family: "Helvetica Neue",Helvetica,"PingFang SC","Hiragino Sans GB","Microsoft YaHei","微软雅黑",Arial,sans-serif;'>标签透明度</div>
+              <el-slider v-model="transparent" ></el-slider>
+            </el-col>
+          </el-row>
+        </el-footer>
+      </el-container>
+    </div>
+    <div class="segmentation" v-if="active==3">
+      <el-button
+            style="margin-left: 25px"
+            type="success"
+            plain
+            :loading="buttonDisable"
+            @click="segment"
+          >分析</el-button>
     </div>
   </div>
 </template>
@@ -128,7 +185,7 @@ export default {
         full: true, // 是否输出原图比例的截图
         canMoveBox: true, // 截图框能否拖动
         original: false, // 上传图片按照原始比例渲染
-        centerBox: false, // 截图框是否被限制在图片里面
+        centerBox: true, // 截图框是否被限制在图片里面
         infoTrue: true // true 为展示真实输出图片宽高 false 展示看到的截图框宽高
       },
       previews: {},
@@ -136,13 +193,17 @@ export default {
       // 防止重复提交
       loading: false,
       imgbase64: "",
-      ocrResult: "",
+      ocrText: "",
       buttonDisable: false,
+      active: 1,
+      ocrResult: {},
+      candidateSegment: {},
+      loading: false,
+      transparent: 80
     };
   },
   methods: {
     changeUpload(file, fileList) {
-      //console.log(file);
       this.fileinfo = file;
       // 上传成功后将图片地址赋值给裁剪框显示图片
       this.$nextTick(() => {
@@ -152,7 +213,6 @@ export default {
       });
     },
     finish() {
-      //console.log(this.previews);
       var img;
       this.$refs.cropper.getCropData(data => {
         try {
@@ -160,35 +220,94 @@ export default {
         } catch (error) {
           img = window.URL.createObjectURL(data);
         }
-        //let img = window.URL.createObjectURL(data);
         this.imgbase64 = img;
         this.dialogVisible = false;
-        //console.log(this.imgbase64);
+        this.ocr();
       });
     },
     realTime(data) {
-      //console.log("realTime");
-      //console.log(data)
       this.previews = data;
     },
     ocr() {
       this.buttonDisable = true;
+      this.loading = true;
       this.axios
-        .post(this.serverURL, {
+        .post(this.serverURL + "/ocr", {
           img: this.imgbase64
         })
         .then(
           res => {
-            console.log(res.data);
-            this.ocrResult = res.data;
+            this.ocrResult = res.data.result;
+            this.candidateSegment = JSON.parse(JSON.stringify(this.ocrResult));
+            console.log(this.candidateSegment);
             this.buttonDisable = false;
+            this.loading = false;
+            if (res.data.success == 0) {
+              this.$message.error("OCR无法识别目标图片");
+              this.ocrText = "";
+              return;
+            }
+
+            var content = "";
+            for (let index = 0; index < res.data.result.length; index++) {
+              const element = res.data.result[index];
+              content += element.content;
+            }
+            this.ocrText = content;
           },
           res => {
-            // 错误回调
+            this.buttonDisable = false;
+            this.loading = false;
+            this.$message.error("OCR后台服务错误");
           }
         );
+    },
+
+    segment() {
+      var data = []
+      var index = 0;
+      for (let i = 0; i < this.candidateSegment.length; i++) {
+        const element = this.candidateSegment[i].content;
+        data[index++] = element;
+      }
+
+      this.loading = true;
+      this.axios
+        .post(this.serverURL + "/segment", {
+          data: data
+        })
+        .then(
+          res => {
+            
+            this.loading = false;
+            console.log(res.data)
+            
+
+
+          },
+          res => {
+            this.loading = false;
+            this.$message.error("后台服务错误");
+          }
+        );
+    },
+
+    nextstep() {
+      if (this.active < 3) {
+        this.active = this.active + 1;
+      }
+    },
+    laststep() {
+      if (this.active > 0) {
+        this.active = this.active - 1;
+      }
+    },
+    deleteRow(index, rows) {
+      rows.splice(index, 1);
+      //console.log(this.ocrResult);
     }
   },
+
   computed: {
     previewStyle() {
       var previews = this.previews;
