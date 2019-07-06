@@ -379,22 +379,34 @@ def segment(text, dicfile):
 
     result = ""
 
-    result += '{"docs":"",\n"datas":\n['
+    result += '{"docs":"",\n"origindatas":['
     linecount = 0
 
+    for line in text:
+        linecount += 1
+        line = strQ2B(line)
+        if line[-1] == "\n":
+            line = line[:-1]
+        result += "\"" + str(line) + "\""
+        if linecount != len(text):
+            result += ","
+
+    result += '],\n"datas":\n['
+
+    linecount = 0
     for line in text:
         line = strQ2B(line)
         seg_list = linetolist(line)
         seg_list = wdjoin(seg_list)
         dic = listtodic(seg_list, linecount)
-        print(seg_list)
+        #print(seg_list)
         if len(dic) != 0:
             linecount += 1
             put = json.dumps(dic, indent=4, ensure_ascii=False)
             result += put
             if linecount!=len(text):
-                result += ",\n"
+                result += ","
     result += "]\n}"
     #print(linecount,"line(s) of record transfered.")
     #print("Segmentation Finish.")
-    return result
+    return json.dumps(json.loads(result), indent=4)

@@ -142,9 +142,7 @@
           >下一步</el-button>
           <el-row>
             <el-col :span="12" :offset="6">
-              <div
-                style="margin-top: 10px; font-family: `Helvetica Neue`,Helvetica,`PingFang SC`,`Hiragino Sans GB`,`Microsoft YaHei`,`微软雅黑`,Arial,sans-serif;"
-              >标签透明度</div>
+              <div class="text">标签透明度</div>
               <el-slider v-model="transparent"></el-slider>
             </el-col>
           </el-row>
@@ -152,13 +150,25 @@
       </el-container>
     </div>
     <div class="segmentation" v-if="active==3">
-      <el-button
-        style="margin-left: 25px"
-        type="success"
-        plain
-        :loading="buttonDisable"
-        @click="segment"
-      >分析</el-button>
+      <el-button style type="success" plain :loading="buttonDisable" @click="segment">分析</el-button>
+
+      <div v-for="(data, index) in segmentResult.datas" :key="index" style="margin-top:20px">
+        <el-card class="box-card" style="width:fit-content; margin:0 auto">
+          <div slot="header" class="clearfix">
+            <span>{{segmentResult.origindatas[index]}}</span>
+          </div>
+          <div v-for="(value, key, i) in data" :key="i" style="margin-bottom:10px">
+            <el-row type="flex" justify="center">
+              <el-col :span="12">
+                <el-badge is-dot class="item" :type="value==`Unlabled`?`error`:`success`">
+                  <el-button size="mini">{{key}}</el-button>
+                </el-badge>
+              </el-col>
+              <el-col :span="12" style="margin: auto">{{value}}</el-col>
+            </el-row>
+          </div>
+        </el-card>
+      </div>
     </div>
   </div>
 </template>
@@ -202,6 +212,7 @@ export default {
       candidateSegment: {},
       loading: false,
       transparent: 80,
+      segmentResult: {},
     }
   },
   methods: {
@@ -240,15 +251,17 @@ export default {
         .then(
           res => {
             this.ocrResult = res.data.result
+            if (res.data.success == 0) {
+              this.$message.error('OCR无法识别目标图片')
+              this.ocrText = ''
+              this.buttonDisable = false
+              this.loading = false
+              return
+            }
             this.candidateSegment = JSON.parse(JSON.stringify(this.ocrResult))
             console.log(this.candidateSegment)
             this.buttonDisable = false
             this.loading = false
-            if (res.data.success == 0) {
-              this.$message.error('OCR无法识别目标图片')
-              this.ocrText = ''
-              return
-            }
 
             var content = ''
             for (let index = 0; index < res.data.result.length; index++) {
@@ -281,7 +294,10 @@ export default {
         .then(
           res => {
             this.loading = false
-            console.log(res.data)
+            this.segmentResult = res.data
+            if (this.segmentResult.docs != '') {
+              this.$message.error(this.segmentResult.docs)
+            }
           },
           res => {
             this.loading = false
@@ -332,5 +348,10 @@ export default {
 .cropper {
   width: auto;
   height: 1200px;
+}
+.text {
+  margin-top: 10px;
+  font-family: 'Helvetica Neue', Helvetica, 'PingFang SC', 'Hiragino Sans GB',
+    'Microsoft YaHei', '微软雅黑', Arial, sans-serif;
 }
 </style>
