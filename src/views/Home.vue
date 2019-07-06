@@ -103,7 +103,7 @@
               size="mini"
               v-for="(tag, index) in ocrResult"
               :key="index"
-              :style='{opacity:transparent / 100, position:"absolute", left:tag.frame[0].split(",")[0] + "px", top:tag.frame[0].split(",")[1] + "px"}'
+              :style="{opacity:transparent / 100, position:`absolute`, left:tag.frame[0].split(`,`)[0] + `px`, top:tag.frame[0].split(`,`)[1] + `px`}"
             >{{tag.content}}</el-tag>
           </div>
         </el-main>
@@ -142,8 +142,10 @@
           >下一步</el-button>
           <el-row>
             <el-col :span="12" :offset="6">
-              <div style='margin-top: 10px; font-family: "Helvetica Neue",Helvetica,"PingFang SC","Hiragino Sans GB","Microsoft YaHei","微软雅黑",Arial,sans-serif;'>标签透明度</div>
-              <el-slider v-model="transparent" ></el-slider>
+              <div
+                style="margin-top: 10px; font-family: `Helvetica Neue`,Helvetica,`PingFang SC`,`Hiragino Sans GB`,`Microsoft YaHei`,`微软雅黑`,Arial,sans-serif;"
+              >标签透明度</div>
+              <el-slider v-model="transparent"></el-slider>
             </el-col>
           </el-row>
         </el-footer>
@@ -151,30 +153,30 @@
     </div>
     <div class="segmentation" v-if="active==3">
       <el-button
-            style="margin-left: 25px"
-            type="success"
-            plain
-            :loading="buttonDisable"
-            @click="segment"
-          >分析</el-button>
+        style="margin-left: 25px"
+        type="success"
+        plain
+        :loading="buttonDisable"
+        @click="segment"
+      >分析</el-button>
     </div>
   </div>
 </template>
 
 <script>
-import { VueCropper } from "vue-cropper";
+import { VueCropper } from 'vue-cropper'
 
 export default {
-  name: "OrderReader",
+  name: 'OrderReader',
   data() {
     return {
-      serverURL: "/api",
+      serverURL: '/api',
       dialogVisible: false,
       option: {
-        img: "", // 裁剪图片的地址
+        img: '', // 裁剪图片的地址
         info: true, // 裁剪框的大小信息
         outputSize: 1, // 裁剪生成图片的质量
-        outputType: "png", // 裁剪生成图片的格式
+        outputType: 'png', // 裁剪生成图片的格式
         canScale: true, // 图片是否允许滚轮缩放
         autoCrop: true, // 是否默认生成截图框
         autoCropWidth: 300, // 默认生成截图框宽度
@@ -186,147 +188,143 @@ export default {
         canMoveBox: true, // 截图框能否拖动
         original: false, // 上传图片按照原始比例渲染
         centerBox: true, // 截图框是否被限制在图片里面
-        infoTrue: true // true 为展示真实输出图片宽高 false 展示看到的截图框宽高
+        infoTrue: true, // true 为展示真实输出图片宽高 false 展示看到的截图框宽高
       },
       previews: {},
       fileinfo: {},
       // 防止重复提交
       loading: false,
-      imgbase64: "",
-      ocrText: "",
+      imgbase64: '',
+      ocrText: '',
       buttonDisable: false,
       active: 1,
       ocrResult: {},
       candidateSegment: {},
       loading: false,
-      transparent: 80
-    };
+      transparent: 80,
+    }
   },
   methods: {
     changeUpload(file, fileList) {
-      this.fileinfo = file;
+      this.fileinfo = file
       // 上传成功后将图片地址赋值给裁剪框显示图片
       this.$nextTick(() => {
-        console.log(file.raw);
-        this.option.img = URL.createObjectURL(new Blob([file.raw]));
-        this.dialogVisible = true;
-      });
+        console.log(file.raw)
+        this.option.img = URL.createObjectURL(new Blob([file.raw]))
+        this.dialogVisible = true
+      })
     },
     finish() {
-      var img;
+      var img
       this.$refs.cropper.getCropData(data => {
         try {
-          img = data;
+          img = data
         } catch (error) {
-          img = window.URL.createObjectURL(data);
+          img = window.URL.createObjectURL(data)
         }
-        this.imgbase64 = img;
-        this.dialogVisible = false;
-        this.ocr();
-      });
+        this.imgbase64 = img
+        this.dialogVisible = false
+        this.ocr()
+      })
     },
     realTime(data) {
-      this.previews = data;
+      this.previews = data
     },
     ocr() {
-      this.buttonDisable = true;
-      this.loading = true;
+      this.buttonDisable = true
+      this.loading = true
       this.axios
-        .post(this.serverURL + "/ocr", {
-          img: this.imgbase64
+        .post(this.serverURL + '/ocr', {
+          img: this.imgbase64,
         })
         .then(
           res => {
-            this.ocrResult = res.data.result;
-            this.candidateSegment = JSON.parse(JSON.stringify(this.ocrResult));
-            console.log(this.candidateSegment);
-            this.buttonDisable = false;
-            this.loading = false;
+            this.ocrResult = res.data.result
+            this.candidateSegment = JSON.parse(JSON.stringify(this.ocrResult))
+            console.log(this.candidateSegment)
+            this.buttonDisable = false
+            this.loading = false
             if (res.data.success == 0) {
-              this.$message.error("OCR无法识别目标图片");
-              this.ocrText = "";
-              return;
+              this.$message.error('OCR无法识别目标图片')
+              this.ocrText = ''
+              return
             }
 
-            var content = "";
+            var content = ''
             for (let index = 0; index < res.data.result.length; index++) {
-              const element = res.data.result[index];
-              content += element.content;
+              const element = res.data.result[index]
+              content += element.content
             }
-            this.ocrText = content;
+            this.ocrText = content
           },
           res => {
-            this.buttonDisable = false;
-            this.loading = false;
-            this.$message.error("OCR后台服务错误");
+            this.buttonDisable = false
+            this.loading = false
+            this.$message.error('OCR后台服务错误')
           }
-        );
+        )
     },
 
     segment() {
       var data = []
-      var index = 0;
+      var index = 0
       for (let i = 0; i < this.candidateSegment.length; i++) {
-        const element = this.candidateSegment[i].content;
-        data[index++] = element;
+        const element = this.candidateSegment[i].content
+        data[index++] = element
       }
 
-      this.loading = true;
+      this.loading = true
       this.axios
-        .post(this.serverURL + "/segment", {
-          data: data
+        .post(this.serverURL + '/segment', {
+          data: data,
         })
         .then(
           res => {
-            
-            this.loading = false;
+            this.loading = false
             console.log(res.data)
-            
-
-
           },
           res => {
-            this.loading = false;
-            this.$message.error("后台服务错误");
+            this.loading = false
+            this.$message.error('后台服务错误')
           }
-        );
+        )
     },
 
     nextstep() {
       if (this.active < 3) {
-        this.active = this.active + 1;
+        this.active = this.active + 1
       }
     },
     laststep() {
       if (this.active > 0) {
-        this.active = this.active - 1;
+        this.active = this.active - 1
       }
     },
     deleteRow(index, rows) {
-      rows.splice(index, 1);
+      rows.splice(index, 1)
       //console.log(this.ocrResult);
-    }
+    },
   },
 
   computed: {
     previewStyle() {
-      var previews = this.previews;
-      var cropperHeight = this.cropperHeight;
+      var previews = this.previews
+      var cropperHeight = this.cropperHeight
       return {
-        width: previews.w + "px",
-        height: previews.h + "px",
-        overflow: "hidden",
-        margin: "auto",
+        width: previews.w + 'px',
+        height: previews.h + 'px',
+        overflow: 'hidden',
+        margin: 'auto',
         zoom: this.isLandscape
           ? this.previewWidth / previews.w
-          : cropperHeight / previews.h
-      };
-    }
+          : cropperHeight / previews.h,
+      }
+    },
   },
   components: {
-    VueCropper
-  }
-};
+    VueCropper,
+  },
+}
 </script>
 
 <!-- Add "scoped" attribute to limit CSS to this component only -->
