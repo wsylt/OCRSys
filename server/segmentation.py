@@ -17,7 +17,7 @@ import re
 
 #Word cutting
 seperatorlist = ["mm", "MM", '"', ".", 'pcs', "(", ")", "+", "-", ":", "_", "/", "=", "x", "X"]
-addtoleftlist = [")", '"', "mm", "MM", "pcs", 't']
+addtoleftlist = [")", '"', "mm", "MM", "pcs"]
 connectorlist = ["+", "-", ":", "_", "/", "(", ".", "=", "x", "X"]
 pairtracerlist = {"(": ")"}
 #date matching
@@ -134,8 +134,8 @@ def wdjoin(wd):
                 if not index<1:
                     tmp = wd[:index-1] + [wd[index-1] + wd[index]] + wd[index+1:]
                 elif index==0:
-                    tmp = wd
-                wd = tmp 
+                    checker = 0
+                wd = tmp
     wd = dullkiller(wd)
     #print(wd)
 
@@ -148,7 +148,7 @@ def wdjoin(wd):
             except ValueError:
                 checker=0
             else:
-                if not index<1 and not index>len(wd)-1:
+                if not index<1 and not index>len(wd)-2:
                     tmp = wd[:index-1] + [wd[index-1] + wd[index] + wd[index+1]] + wd[index+2:]
                 elif index==0:
                     tmp = [wd[0] + wd[1]] + wd[2:]
@@ -190,7 +190,7 @@ def wdjoin(wd):
                 tmp += [addwd] + wd[j[0]+len(j):]
                 wd = tmp
     wd = dullkiller(wd)
-
+    #print(wd)
     return wd
 
 #-----------string toolbox-------------
@@ -382,6 +382,9 @@ def segment(text, dicfile):
     result += '{"docs":"",\n"origindatas":['
     linecount = 0
 
+    while '' in text:
+        text.remove('')
+
     for line in text:
         linecount += 1
         line = strQ2B(line)
@@ -399,7 +402,7 @@ def segment(text, dicfile):
         seg_list = linetolist(line)
         seg_list = wdjoin(seg_list)
         dic = listtodic(seg_list, linecount)
-        #print(seg_list)
+        #print(dic)
         if len(dic) != 0:
             linecount += 1
             put = json.dumps(dic, indent=4, ensure_ascii=False)

@@ -104,6 +104,7 @@
               v-for="(tag, index) in ocrResult"
               :key="index"
               :style="{opacity:transparent / 100, position:`absolute`, left:tag.frame[0].split(`,`)[0] + `px`, top:tag.frame[0].split(`,`)[1] + `px`}"
+              @click="addElement(tag)"
             >{{tag.content}}</el-tag>
           </div>
         </el-main>
@@ -127,19 +128,27 @@
         </el-main>
         <el-footer>
           <el-button
-            style="margin-left: 25px"
+            style="margin-left: 10px; margin-right: 10px"
             type="success"
             plain
             :loading="buttonDisable"
             @click="laststep"
           >上一步</el-button>
           <el-button
-            style="margin-left: 25px"
+            style="margin-left: 10px; margin-right: 10px"
             type="success"
             plain
             :loading="buttonDisable"
             @click="nextstep"
           >下一步</el-button>
+          <br>
+          <el-button
+            style="margin-top: 20px"
+            type="danger"
+            plain
+            :loading="buttonDisable"
+            @click="clearCandidateList"
+          >清空</el-button>
           <el-row>
             <el-col :span="12" :offset="6">
               <div class="text">标签透明度</div>
@@ -164,7 +173,7 @@
                   <el-button size="mini">{{key}}</el-button>
                 </el-badge>
               </el-col>
-              <el-col :span="12" style="margin: auto">{{value}}</el-col>
+              <el-col :span="12" style="margin: auto; padding-left: 10px">{{value}}</el-col>
             </el-row>
           </div>
         </el-card>
@@ -208,11 +217,11 @@ export default {
       ocrText: '',
       buttonDisable: false,
       active: 1,
-      ocrResult: {},
-      candidateSegment: {},
+      ocrResult: [],
+      candidateSegment: [],
       loading: false,
       transparent: 80,
-      segmentResult: {},
+      segmentResult: [],
     }
   },
   methods: {
@@ -315,6 +324,13 @@ export default {
       if (this.active > 0) {
         this.active = this.active - 1
       }
+    },
+    addElement(element) {
+      this.candidateSegment.push(element)
+    },
+    clearCandidateList() {
+      console.log(this.candidateSegment)
+      this.candidateSegment = []
     },
     deleteRow(index, rows) {
       rows.splice(index, 1)
