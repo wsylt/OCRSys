@@ -8,7 +8,7 @@ module.exports = {
                 target: 'http://localhost:5000',   //代理接口
                 changeOrigin: true,
                 pathRewrite: {
-                    '^/api': '/'    //代理的路径
+                    '^/api': '/api'    //代理的路径
                 }
             }
         },

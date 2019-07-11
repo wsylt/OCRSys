@@ -18,7 +18,7 @@ def md5(str):
 app = Flask(__name__)
 CORS(app, supports_credentials=True)
  
-@app.route('/ocr', methods=['GET','POST'])
+@app.route('/api/ocr', methods=['GET','POST'])
 def ocr():
     img = request.json.get('img')
     if (img == ''):
@@ -42,7 +42,7 @@ def ocr():
     
     return (response.text)
 
-@app.route('/segment', methods=['GET','POST'])
+@app.route('/api/segment', methods=['GET','POST'])
 def seg():
     return segmentation.segment(request.json.get('data'), './dic.json')
 
