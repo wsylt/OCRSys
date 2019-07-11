@@ -1,1 +1,1 @@
-python server.py
+python server_sogou.py

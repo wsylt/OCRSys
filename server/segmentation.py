@@ -340,6 +340,13 @@ def listtodic(rawlist, lc):
             counter += 1
     return out
 
+def dictoarray(dic):
+    list_ = []
+    for (k, v) in dic.items():
+        tup = (k, v, )
+        list_.append(tup)
+    return (list_)
+
 def segment(text, dicfile):
     global TSOWlist, NIOSOWlist, PNSOWlist, DNSOWlist,SPSOWlist, NameSOWlist, SDSOWlist, MASOWlist, FlSOWlist
 
@@ -388,8 +395,7 @@ def segment(text, dicfile):
     for line in text:
         linecount += 1
         line = strQ2B(line)
-        if line[-1] == "\n":
-            line = line[:-1]
+        line = re.sub('\n', '', line)
         result += "\"" + str(line) + "\""
         if linecount != len(text):
             result += ","
@@ -402,7 +408,7 @@ def segment(text, dicfile):
         seg_list = linetolist(line)
         seg_list = wdjoin(seg_list)
         dic = listtodic(seg_list, linecount)
-        #print(dic)
+        dic = dictoarray(dic)
         if len(dic) != 0:
             linecount += 1
             put = json.dumps(dic, indent=4, ensure_ascii=False)

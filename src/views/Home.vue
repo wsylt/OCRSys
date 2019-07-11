@@ -112,7 +112,8 @@
           <el-table :data="candidateSegment" border style="width: 100%" v-loading="loading">
             <el-table-column label="正文" width>
               <template slot-scope="scope">
-                <el-input v-model="scope.row.content" placeholder="请输入内容"></el-input>
+                <el-checkbox v-model="mergeArray[scope.$index]"></el-checkbox>
+                <el-input v-model="scope.row.content" placeholder="请输入内容" style="width: 90%"></el-input>
               </template>
             </el-table-column>
             <el-table-column label="操作" width="120">
@@ -141,7 +142,7 @@
             :loading="buttonDisable"
             @click="nextstep"
           >下一步</el-button>
-          <br>
+          <br />
           <el-button
             style="margin-top: 20px"
             type="danger"
@@ -149,6 +150,20 @@
             :loading="buttonDisable"
             @click="clearCandidateList"
           >清空</el-button>
+          <el-button
+            style="margin-top: 20px"
+            type="warning"
+            plain
+            :loading="buttonDisable"
+            @click="mergeCandidateList"
+          >合并</el-button>
+            <el-button
+            style="margin-top: 20px"
+            type="primary"
+            plain
+            :loading="buttonDisable"
+            @click="ocr"
+          >重置</el-button>
           <el-row>
             <el-col :span="12" :offset="6">
               <div class="text">标签透明度</div>
@@ -166,14 +181,16 @@
           <div slot="header" class="clearfix">
             <span>{{segmentResult.origindatas[index]}}</span>
           </div>
-          <div v-for="(value, key, i) in data" :key="i" style="margin-bottom:10px">
+          <div v-for="(element, i) in data" :key="i" style="margin-bottom:10px">
             <el-row type="flex" justify="center">
-              <el-col :span="12">
-                <el-badge is-dot class="item" :type="value==`Unlabled`?`error`:`success`">
-                  <el-button size="mini">{{key}}</el-button>
+              <el-col :span="24">
+                <el-badge is-dot class="item" :type="element[1]==`Unlabled`?`error`:`success`">
+                  <el-button size="mini">{{element[0]}}</el-button>
                 </el-badge>
               </el-col>
-              <el-col :span="12" style="margin: auto; padding-left: 10px">{{value}}</el-col>
+              <el-col :span="12" style="margin: auto; padding-left: 10px">
+                <el-input size="mini" placeholder="请输入内容" v-model="element[1]"></el-input>
+              </el-col>
             </el-row>
           </div>
         </el-card>
@@ -222,6 +239,7 @@ export default {
       loading: false,
       transparent: 80,
       segmentResult: [],
+      mergeArray: [],
     }
   },
   methods: {
@@ -267,8 +285,8 @@ export default {
               this.loading = false
               return
             }
-            this.candidateSegment = JSON.parse(JSON.stringify(this.ocrResult))
-            console.log(this.candidateSegment)
+            //this.candidateSegment = JSON.parse(JSON.stringify(this.ocrResult))
+            //console.log(this.candidateSegment)
             this.buttonDisable = false
             this.loading = false
 
@@ -327,6 +345,28 @@ export default {
     },
     addElement(element) {
       this.candidateSegment.push(element)
+    },
+    mergeCandidateList() {
+      var count = -1
+      for (let index = 0; index < this.mergeArray.length; index++) {
+        const element = this.mergeArray[index]
+        if (element) {
+          if (count == -1) {
+            count = index
+          }
+          console.log(this.candidateSegment[index])
+          if (index > count) {
+            console.log(index, count)
+            this.candidateSegment[count].content +=
+              ' ' + this.candidateSegment[index].content
+            this.candidateSegment[index].content = ''
+          }
+        }
+      }
+
+      for (let index = 0; index < this.mergeArray.length; index++) {
+        this.mergeArray[index] = false
+      }
     },
     clearCandidateList() {
       console.log(this.candidateSegment)
