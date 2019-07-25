@@ -10,10 +10,12 @@
 
 #import jieba
 from astropy.table import join as join
+from rnn import rnn_cws
 import os
 import sys
 import json
 import re
+
 
 #Word cutting
 seperatorlist = ["mm", "MM", '"', ".", 'pcs', "(", ")", "+", "-", ":", "_", "/", "=", "x", "X"]
@@ -189,8 +191,13 @@ def wdjoin(wd):
                 tmp += [addwd] + wd[j[0]+len(j):]
                 wd = tmp
     wd = dullkiller(wd)
-    #print(wd)
-    return wd
+    rnndwd = []
+    for i in wd:
+        awd = rnn_cws.test_cws(i)
+        rnndwd += awd
+
+    #print(rnndwd)
+    return rnndwd
 
 #-----------string toolbox-------------
 
@@ -292,7 +299,6 @@ def isFl(inp):
             out = True
     return out
 
-
 #--------------------------------------
 
 def listtodic(rawlist, lc):
@@ -321,6 +327,7 @@ def listtodic(rawlist, lc):
                         out[i] = 'Time'
                     else:
                         out[i] = 'Mixed'
+                
                 if isT(i):
                     labelck = 1
                     if not i in out:

@@ -112,7 +112,8 @@
           <el-table :data="candidateSegment" border style="width: 100%" v-loading="loading">
             <el-table-column label="正文" width>
               <template slot-scope="scope">
-                <el-checkbox v-model="mergeArray[scope.$index]"></el-checkbox>
+                <!-- <el-checkbox v-model="mergeArray[scope.$index]"></el-checkbox> -->
+                <el-checkbox v-model="scope.row.select"></el-checkbox>
                 <el-input v-model="scope.row.content" placeholder="请输入内容" style="width: 90%"></el-input>
               </template>
             </el-table-column>
@@ -157,7 +158,7 @@
             :loading="buttonDisable"
             @click="mergeCandidateList"
           >合并</el-button>
-            <el-button
+          <el-button
             style="margin-top: 20px"
             type="primary"
             plain
@@ -174,7 +175,7 @@
       </el-container>
     </div>
     <div class="segmentation" v-if="active==3">
-      <el-button style type="success" plain :loading="buttonDisable" @click="segment">分析</el-button>
+      <el-button style type="success" plain :loading="loading" @click="segment">分析</el-button>
 
       <div v-for="(data, index) in segmentResult.datas" :key="index" style="margin-top:20px">
         <el-card class="box-card" style="width:fit-content; margin:0 auto">
@@ -271,13 +272,13 @@ export default {
     ocr() {
       this.buttonDisable = true
       this.loading = true
+      this.clearCandidateList()
       this.axios
         .post(this.serverURL + '/ocr', {
           img: this.imgbase64,
         })
         .then(
           res => {
-            this.ocrResult = res.data.result
             if (res.data.success == 0) {
               this.$message.error('OCR无法识别目标图片')
               this.ocrText = ''
@@ -294,8 +295,10 @@ export default {
             for (let index = 0; index < res.data.result.length; index++) {
               const element = res.data.result[index]
               content += element.content
+              element['select'] = true
             }
             this.ocrText = content
+            this.ocrResult = res.data.result
           },
           res => {
             this.buttonDisable = false
@@ -344,12 +347,15 @@ export default {
       }
     },
     addElement(element) {
+      //element.select = true
       this.candidateSegment.push(element)
+      //console.log(this.candidateSegment)
     },
     mergeCandidateList() {
+      console.log(this.candidateSegment)
       var count = -1
-      for (let index = 0; index < this.mergeArray.length; index++) {
-        const element = this.mergeArray[index]
+      for (let index = 0; index < this.candidateSegment.length; index++) {
+        const element = this.candidateSegment[index].select
         if (element) {
           if (count == -1) {
             count = index
@@ -360,8 +366,28 @@ export default {
             this.candidateSegment[count].content +=
               ' ' + this.candidateSegment[index].content
             this.candidateSegment[index].content = ''
+            this.candidateSegment[index].select = false
+            this.candidateSegment[count].select = false
+            this.deleteRow(index, this.candidateSegment)
           }
         }
+        // console.log(this.candidateSegment)
+        // var count = -1
+        // for (let index = 0; index < this.mergeArray.length; index++) {
+        //   const element = this.mergeArray[index]
+        //   if (element) {
+        //     if (count == -1) {
+        //       count = index
+        //     }
+        //     console.log(this.candidateSegment[index])
+        //     if (index > count) {
+        //       console.log(index, count)
+        //       this.candidateSegment[count].content +=
+        //         ' ' + this.candidateSegment[index].content
+        //       this.candidateSegment[index].content = ''
+        //       this.deleteRow(index, this.candidateSegment)
+        //     }
+        //   }
       }
 
       for (let index = 0; index < this.mergeArray.length; index++) {

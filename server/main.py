@@ -1,3 +1,3 @@
-import segmentation
+import Segmentation
 
-print(segmentation.segment(['Gasket-NC,2010*2060*4.0/5.0mm', "Our material no 我方物料号.：81929549"], "./dic.json"))
+print(Segmentation.segment(['Gasket-NC T=25mmPN20Gasket-NC'], "./dic.json"))
