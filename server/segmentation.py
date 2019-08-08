@@ -2,7 +2,7 @@
 
 #Input format: .txt file with OCRed info, words seperated with "space", line seperated with "enter".
 #Output format: Json file with Docs and prelabeled data.
-#dictionary format: Json file with lists named as [ Index, Name, Nameinorder, Specifications, DN, PN, T, Standard, Material, Flange, Time ] containing Stand-alone pattens.
+#dictionary format: Json file with lists named as [ Index, Name, 订单中名称, 规格型号, DN, PN, T, Standard, Material, Flange, Time ] containing Stand-alone pattens.
 
 #--------------------------------------------------------------------------------------------------------#
 
@@ -10,11 +10,13 @@
 
 #import jieba
 from astropy.table import join as join
-from rnn import rnn_cws
 import os
 import sys
 import json
 import re
+import prediction as pd
+import torch
+from rnnseg import rnn_cws
 
 
 #Word cutting
@@ -24,7 +26,7 @@ connectorlist = ["+", "-", ":", "_", "/", "(", ".", "=", "x", "X"]
 pairtracerlist = {"(": ")"}
 #date matching
 redate = [r'[0-9]+/[0-9]+/[0-9]+', r'[A-Za-z]+/[0-9]+[A-Za-z]*/[0-9]+', r'[0-9]+-[0-9]+-[0-9]+', r'[A-Za-z]+-[0-9]+[A-Za-z]*-[0-9]+']
-#Nameinorder matching
+#订单中名称 matching
 NIOSOWlist = [r'Gasket', r'FC', r'DQ', r'EC', r'GD', r'GE', r'KD', r'DQ', r'NU', r'NF', r'NB']
 #T matching
 Tprereqlist = [r'T', r't', r'厚', r'厚度', r'THK', r'THICK']
@@ -35,7 +37,7 @@ TSOWlist = [r"THICKNESS", r"THICK"]
 PNSOWlist = [r'PN[0-9]+', r"CL[0-9]+", r"[0-9]+LB", r"CLASS[0-9]+", r"Class[0-9]+"]
 #DN matching
 DNSOWlist = [r"DN[0-9]+", r"NPS[0-9]+"]
-#Specifications matching
+#规格型号 matching
 SPSOWlist = [r"[0-9]+\*[0-9]+(\*[0-9]+)?(\*[0-9]+)?(\*[0-9]+)?", r"[0-9]+x[0-9]+(x[0-9]+)?(x[0-9]+)?(x[0-9]+)?"]
 #Name matching
 NameSOWlist = []
@@ -46,7 +48,7 @@ MASOWlist = []
 #Flange matching
 FlSOWlist = []
 
-#typelist: Index, Name, #Nameinorder, Specifications, #DN, #PN, #T, Standard, Material, Flange, #Time, #Unlabled
+#typelist: Index, Name, #订单中名称, 规格型号, #DN, #PN, #T, Standard, Material, Flange, #Time, #Unlabled
 
 def dullkiller(l):
     while 1:
@@ -93,6 +95,8 @@ def linetolist(line):
     for i in line:
         if i != " " and i != "," and i!= "\n":
             tmp += i
+        elif i == '"':
+            tmp += "'"
         else:
             if tmp != "":
                 retlist += [tmp]
@@ -101,7 +105,7 @@ def linetolist(line):
                 retlist += [tmp]
     return retlist
 
-def wdjoin(wd):
+def wdjoin(wd, segmodel, segInfo):
     #wd = linetolist(wd)
     #print(wd)
     
@@ -191,13 +195,14 @@ def wdjoin(wd):
                 tmp += [addwd] + wd[j[0]+len(j):]
                 wd = tmp
     wd = dullkiller(wd)
+#----------RNN segment part------------------------------------------
     rnndwd = []
     for i in wd:
-        awd = rnn_cws.test_cws(i)
+        awd = rnn_cws.cwsSent(i, segmodel, segInfo)
         rnndwd += awd
-
-    #print(rnndwd)
-    return rnndwd
+    wd = rnndwd
+#----------Comment to stop using RNN segment-------------------------
+    return wd
 
 #-----------string toolbox-------------
 
@@ -301,7 +306,7 @@ def isFl(inp):
 
 #--------------------------------------
 
-def listtodic(rawlist, lc):
+def listtodic(rawlist, lc, rnn):
     out = {}
     counter = 0
     lc += 1
@@ -327,7 +332,6 @@ def listtodic(rawlist, lc):
                         out[i] = 'Time'
                     else:
                         out[i] = 'Mixed'
-                
                 if isT(i):
                     labelck = 1
                     if not i in out:
@@ -352,14 +356,14 @@ def listtodic(rawlist, lc):
                 if isNIO(i):
                     labelck = 1
                     if not i in out:
-                        out[i] = 'Nameinorder'
+                        out[i] = '订单中名称'
                     else:
                         out[i] = 'Mixed'
                     
                 if isSP(i):
                     labelck = 1
                     if not i in out:
-                        out[i] = 'Specifications'
+                        out[i] = '规格型号'
                     else:
                         out[i] = 'Mixed'
                     
@@ -392,7 +396,7 @@ def listtodic(rawlist, lc):
                         out[i] = 'Mixed'
 
                 if labelck == 0:
-                    out[i] = "Unlabled"
+                    out[i] = pd.predict(i, rnn)
             labelck = 0
             counter += 1
     return out
@@ -404,7 +408,7 @@ def dictoarray(dic):
         list_.append(tup)
     return (list_)
 
-def segment(text, dicfile):
+def segment(text, dicfile, rnn, segmodel, segInfo):
     global TSOWlist, NIOSOWlist, PNSOWlist, DNSOWlist,SPSOWlist, NameSOWlist, SDSOWlist, MASOWlist, FlSOWlist
 
     try:
@@ -420,14 +424,14 @@ def segment(text, dicfile):
             adddic = json.loads(addinfo)
             if 'T' in adddic:
                 TSOWlist += adddic['T']
-            if 'Nameinorder' in adddic:
-                NIOSOWlist += adddic['Nameinorder']
+            if '订单中名称' in adddic:
+                NIOSOWlist += adddic['订单中名称']
             if 'PN' in adddic:
                 PNSOWlist += adddic['PN']
             if 'DN' in adddic:
                 DNSOWlist += adddic['DN']
-            if 'Specifications' in adddic:
-                SPSOWlist += adddic['Specifications']
+            if '规格型号' in adddic:
+                SPSOWlist += adddic['规格型号']
             if 'Name' in adddic:
                 NameSOWlist += adddic['Name']
             if 'Standard' in adddic:
@@ -453,6 +457,7 @@ def segment(text, dicfile):
         linecount += 1
         line = strQ2B(line)
         line = re.sub('\n', '', line)
+        #print(line)
         result += "\"" + str(line) + "\""
         if linecount != len(text):
             result += ","
@@ -463,8 +468,8 @@ def segment(text, dicfile):
     for line in text:
         line = strQ2B(line)
         seg_list = linetolist(line)
-        seg_list = wdjoin(seg_list)
-        dic = listtodic(seg_list, linecount)
+        seg_list = wdjoin(seg_list, segmodel, segInfo)
+        dic = listtodic(seg_list, linecount, rnn)
         dic = dictoarray(dic)
         if len(dic) != 0:
             linecount += 1
@@ -475,4 +480,5 @@ def segment(text, dicfile):
     result += "]\n}"
     #print(linecount,"line(s) of record transfered.")
     #print("Segmentation Finish.")
-    return json.dumps(json.loads(result), indent=4)
+
+    return json.dumps(json.loads(result), indent=4, ensure_ascii=False)

@@ -5,7 +5,7 @@
       <el-step title="步骤 2" icon="el-icon-upload" @click.native="active=2"></el-step>
       <el-step title="步骤 3" icon="el-icon-picture" @click.native="active=3"></el-step>
     </el-steps>
-    <div class="imp_processor" v-if="active==1">
+    <div class="img_processor" v-if="active==1">
       <div>
         <el-upload
           class="upload-demo"
@@ -23,8 +23,8 @@
         <el-button type="text" @click="dialogVisible=true">重新裁剪</el-button>
 
         <div>
-          <img :src="imgbase64" style="padding: 10px" />
-          <br />
+          <img :src="imgbase64" style="padding: 10px">
+          <br>
           <el-input
             type="textarea"
             autosize
@@ -33,7 +33,7 @@
             style="width: 60%"
             :disabled="true"
           ></el-input>
-          <br />
+          <br>
           <div style="padding: 25px">
             <el-button
               style="margin-right: 25px"
@@ -57,9 +57,10 @@
           :visible.sync="dialogVisible"
           append-to-body
           :close-on-click-modal="false"
+          width="80%"
         >
           <div class="cropper-content">
-            <div class="cropper" style="text-align:center; height: 300px">
+            <div class="cropper" style="text-align:center; height: 600px">
               <vueCropper
                 ref="cropper"
                 :img="option.img"
@@ -81,7 +82,7 @@
             <div :style="{'margin-left':'20px'}">
               <div class="show-preview" :style="previewStyle">
                 <div :style="previews.div" class="preview">
-                  <img :src="previews.url" :style="previews.img" />
+                  <img :src="previews.url" :style="previews.img">
                 </div>
               </div>
             </div>
@@ -98,7 +99,7 @@
         <el-header height="0px"></el-header>
         <el-main style="height: 300px; position: relative">
           <div style="position:absolute; text-align:center; margin:0 auto">
-            <img :src="imgbase64" style />
+            <img :src="imgbase64" style>
             <el-tag
               size="mini"
               v-for="(tag, index) in ocrResult"
@@ -143,7 +144,7 @@
             :loading="buttonDisable"
             @click="nextstep"
           >下一步</el-button>
-          <br />
+          <br>
           <el-button
             style="margin-top: 20px"
             type="danger"
