@@ -23,8 +23,8 @@
         <el-button type="text" @click="dialogVisible=true">重新裁剪</el-button>
 
         <div>
-          <img :src="imgbase64" style="padding: 10px">
-          <br>
+          <img :src="imgbase64" style="padding: 10px" />
+          <br />
           <el-input
             type="textarea"
             autosize
@@ -33,7 +33,7 @@
             style="width: 60%"
             :disabled="true"
           ></el-input>
-          <br>
+          <br />
           <div style="padding: 25px">
             <el-button
               style="margin-right: 25px"
@@ -82,7 +82,7 @@
             <div :style="{'margin-left':'20px'}">
               <div class="show-preview" :style="previewStyle">
                 <div :style="previews.div" class="preview">
-                  <img :src="previews.url" :style="previews.img">
+                  <img :src="previews.url" :style="previews.img" />
                 </div>
               </div>
             </div>
@@ -99,7 +99,7 @@
         <el-header height="0px"></el-header>
         <el-main style="height: 300px; position: relative">
           <div style="position:absolute; text-align:center; margin:0 auto">
-            <img :src="imgbase64" style>
+            <img :src="imgbase64" style />
             <el-tag
               size="mini"
               v-for="(tag, index) in ocrResult"
@@ -144,7 +144,7 @@
             :loading="buttonDisable"
             @click="nextstep"
           >下一步</el-button>
-          <br>
+          <br />
           <el-button
             style="margin-top: 20px"
             type="danger"
@@ -177,6 +177,7 @@
     </div>
     <div class="segmentation" v-if="active==3">
       <el-button style type="success" plain :loading="loading" @click="segment">分析</el-button>
+      <el-button style type="success" plain :loading="loading" @click="exportXLSX">导出</el-button>
 
       <div v-for="(data, index) in segmentResult.datas" :key="index" style="margin-top:20px">
         <el-card class="box-card" style="width:fit-content; margin:0 auto">
@@ -203,6 +204,32 @@
 
 <script>
 import { VueCropper } from 'vue-cropper'
+
+import XLSX from "xlsx"
+function sheet2blob(sheet, sheetName) {
+	sheetName = sheetName || 'sheet1';
+	var workbook = {
+		SheetNames: [sheetName],
+		Sheets: {}
+	};
+	workbook.Sheets[sheetName] = sheet;
+	// 生成excel的配置项
+	var wopts = {
+		bookType: 'xlsx', // 要生成的文件类型
+		bookSST: false, // 是否生成Shared String Table，官方解释是，如果开启生成速度会下降，但在低版本IOS设备上有更好的兼容性
+		type: 'binary'
+	};
+	var wbout = XLSX.write(workbook, wopts);
+	var blob = new Blob([s2ab(wbout)], {type:"application/octet-stream"});
+	// 字符串转ArrayBuffer
+	function s2ab(s) {
+		var buf = new ArrayBuffer(s.length);
+		var view = new Uint8Array(buf);
+		for (var i=0; i!=s.length; ++i) view[i] = s.charCodeAt(i) & 0xFF;
+		return buf;
+	}
+	return blob;
+}
 
 export default {
   name: 'OrderReader',
@@ -326,6 +353,7 @@ export default {
           res => {
             this.loading = false
             this.segmentResult = res.data
+            console.log(this.segmentResult)
             if (this.segmentResult.docs != '') {
               this.$message.error(this.segmentResult.docs)
             }
@@ -335,6 +363,20 @@ export default {
             this.$message.error('后台服务错误')
           }
         )
+    },
+
+    exportXLSX() {
+      var aoa = this.segmentResult.datas[0]
+      var sheet = XLSX.utils.aoa_to_sheet(aoa)
+      //window.navigator.msSaveBlob(sheet2blob(sheet), 'test.xlsx')
+      var objectUrl = window.URL.createObjectURL(sheet2blob(sheet))
+      console.log(objectUrl)
+      var a = document.createElement('a')
+      a.href = objectUrl
+      a.download = "test.xlsx"
+      a.click()
+      a.remove()
+      window.URL.revokeObjectURL(objectUrl)
     },
 
     nextstep() {

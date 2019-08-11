@@ -11,6 +11,8 @@ import time
 import segmentation
 
 ### load module
+import segmentation
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -87,6 +89,10 @@ keras_model_weights_file = op.dirname(op.abspath(__file__))+"/rnnseg/keras_model
 cwsInfo = cws.loadCwsInfo(cws_info_file)
 segmodel = loadModel(keras_model_file, keras_model_weights_file)
 
+### magic
+from rnnseg import rnn_cws
+sample1 = 'Gasket-NC T=25mmPN20 gasket-NC'
+rnn_cws.cwsSent(sample1, segmodel, cwsInfo)
 ###
 
 def md5(str):

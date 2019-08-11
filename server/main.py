@@ -1,4 +1,4 @@
-import Segmentation
+import segmentation
 
 import torch
 import torch.nn as nn
@@ -85,10 +85,12 @@ sample1 = 'Gasket-NC T=25mmPN20 gasket-NC'
 sample2 = '1 Gasket 2 GASKET,PN20(Class 150), Flat ring, RF, 1.5 mm(1/16)thick, ASME B16.21 7551FD01 pc 20 32.06 641.2 7551FG01'
 sample3 = '1 8402078 Fibre gasket F14, Aramid fiber with nitrile binder, RF, B16,5, NPS3/4,CLASS150, t=0.0625in27*57*1.5875 0.75 片 14 2.83 39.62'
 
+# from rnnseg import rnn_cws
+# rnn_cws.cwsSent(sample1, segmodel, cwsInfo)
 
-out1 = Segmentation.segment([sample1], "./dic.json", cls_rnn, segmodel, cwsInfo)
+out1 = segmentation.segment([sample1], "./dic.json", cls_rnn, segmodel, cwsInfo)
 print(out1)
-out2 = Segmentation.segment([sample2], "./dic.json", cls_rnn, segmodel, cwsInfo)
+out2 = segmentation.segment([sample2], "./dic.json", cls_rnn, segmodel, cwsInfo)
 print(out2)
-out3 = Segmentation.segment([sample3], "./dic.json", cls_rnn, segmodel, cwsInfo)
+out3 = segmentation.segment([sample3], "./dic.json", cls_rnn, segmodel, cwsInfo)
 print(out3)
