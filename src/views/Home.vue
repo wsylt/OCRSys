@@ -204,31 +204,31 @@
 
 <script>
 import { VueCropper } from 'vue-cropper'
-
-import XLSX from "xlsx"
+import qs from 'qs'
+import XLSX from 'xlsx'
 function sheet2blob(sheet, sheetName) {
-	sheetName = sheetName || 'sheet1';
-	var workbook = {
-		SheetNames: [sheetName],
-		Sheets: {}
-	};
-	workbook.Sheets[sheetName] = sheet;
-	// 生成excel的配置项
-	var wopts = {
-		bookType: 'xlsx', // 要生成的文件类型
-		bookSST: false, // 是否生成Shared String Table，官方解释是，如果开启生成速度会下降，但在低版本IOS设备上有更好的兼容性
-		type: 'binary'
-	};
-	var wbout = XLSX.write(workbook, wopts);
-	var blob = new Blob([s2ab(wbout)], {type:"application/octet-stream"});
-	// 字符串转ArrayBuffer
-	function s2ab(s) {
-		var buf = new ArrayBuffer(s.length);
-		var view = new Uint8Array(buf);
-		for (var i=0; i!=s.length; ++i) view[i] = s.charCodeAt(i) & 0xFF;
-		return buf;
-	}
-	return blob;
+  sheetName = sheetName || 'sheet1'
+  var workbook = {
+    SheetNames: [sheetName],
+    Sheets: {},
+  }
+  workbook.Sheets[sheetName] = sheet
+  // 生成excel的配置项
+  var wopts = {
+    bookType: 'xlsx', // 要生成的文件类型
+    bookSST: false, // 是否生成Shared String Table，官方解释是，如果开启生成速度会下降，但在低版本IOS设备上有更好的兼容性
+    type: 'binary',
+  }
+  var wbout = XLSX.write(workbook, wopts)
+  var blob = new Blob([s2ab(wbout)], { type: 'application/octet-stream' })
+  // 字符串转ArrayBuffer
+  function s2ab(s) {
+    var buf = new ArrayBuffer(s.length)
+    var view = new Uint8Array(buf)
+    for (var i = 0; i != s.length; ++i) view[i] = s.charCodeAt(i) & 0xff
+    return buf
+  }
+  return blob
 }
 
 export default {
@@ -301,39 +301,53 @@ export default {
       this.buttonDisable = true
       this.loading = true
       this.clearCandidateList()
-      this.axios
-        .post(this.serverURL + '/ocr', {
+      this.axios({
+        url: this.serverURL + '/ocr',
+        method: 'post',
+        responseType: 'json',
+        data: qs.stringify({
           img: this.imgbase64,
-        })
-        .then(
-          res => {
-            if (res.data.success == 0) {
-              this.$message.error('OCR无法识别目标图片')
-              this.ocrText = ''
-              this.buttonDisable = false
-              this.loading = false
-              return
-            }
-            //this.candidateSegment = JSON.parse(JSON.stringify(this.ocrResult))
-            //console.log(this.candidateSegment)
+        }),
+        headers: {
+          //'X-CSRFToken': this.getCookie('csrftoken'),
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+      }).then(
+        res => {
+          if (!res.data) {
+            this.$message.error('空')
+            this.ocrText = ''
             this.buttonDisable = false
             this.loading = false
-
-            var content = ''
-            for (let index = 0; index < res.data.result.length; index++) {
-              const element = res.data.result[index]
-              content += element.content
-              element['select'] = true
-            }
-            this.ocrText = content
-            this.ocrResult = res.data.result
-          },
-          res => {
-            this.buttonDisable = false
-            this.loading = false
-            this.$message.error('OCR后台服务错误')
+            return
           }
-        )
+          if (res.data.success == 0) {
+            this.$message.error('OCR无法识别目标图片')
+            this.ocrText = ''
+            this.buttonDisable = false
+            this.loading = false
+            return
+          }
+          //this.candidateSegment = JSON.parse(JSON.stringify(this.ocrResult))
+          //console.log(this.candidateSegment)
+          this.buttonDisable = false
+          this.loading = false
+
+          var content = ''
+          for (let index = 0; index < res.data.result.length; index++) {
+            const element = res.data.result[index]
+            content += element.content
+            element['select'] = true
+          }
+          this.ocrText = content
+          this.ocrResult = res.data.result
+        },
+        res => {
+          this.buttonDisable = false
+          this.loading = false
+          this.$message.error('OCR后台服务错误')
+        }
+      )
     },
 
     segment() {
@@ -345,24 +359,31 @@ export default {
       }
 
       this.loading = true
-      this.axios
-        .post(this.serverURL + '/segment', {
+      this.axios({
+        url: this.serverURL + '/segment',
+        method: 'post',
+        responseType: 'json',
+        data: qs.stringify({
           data: data,
-        })
-        .then(
-          res => {
-            this.loading = false
-            this.segmentResult = res.data
-            console.log(this.segmentResult)
-            if (this.segmentResult.docs != '') {
-              this.$message.error(this.segmentResult.docs)
-            }
-          },
-          res => {
-            this.loading = false
-            this.$message.error('后台服务错误')
+        }),
+        headers: {
+          //'X-CSRFToken': this.getCookie('csrftoken'),
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+      }).then(
+        res => {
+          this.loading = false
+          this.segmentResult = res.data
+          console.log(this.segmentResult)
+          if (this.segmentResult.docs != '') {
+            this.$message.error(this.segmentResult.docs)
           }
-        )
+        },
+        res => {
+          this.loading = false
+          this.$message.error('后台服务错误')
+        }
+      )
     },
 
     exportXLSX() {
@@ -373,7 +394,7 @@ export default {
       console.log(objectUrl)
       var a = document.createElement('a')
       a.href = objectUrl
-      a.download = "test.xlsx"
+      a.download = 'test.xlsx'
       a.click()
       a.remove()
       window.URL.revokeObjectURL(objectUrl)
